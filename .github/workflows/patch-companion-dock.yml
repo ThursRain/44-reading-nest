@@ -1,0 +1,167 @@
+name: Patch companion dock
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch reader companion dock
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'index.html';
+          let html = fs.readFileSync(path, 'utf8');
+
+          const css = String.raw`
+    .reader-view::before { height: calc(260px + env(safe-area-inset-bottom)); }
+    .reader-scroll { padding-bottom: calc(300px + env(safe-area-inset-bottom)); }
+    .bottom-actions { display: none !important; }
+    .reader-companion-dock {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 5;
+      display: grid;
+      gap: 10px;
+      padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(252,246,238,.86), var(--reader-bg-bottom) 28%, var(--reader-bg-bottom));
+      backdrop-filter: blur(18px);
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -18px 38px rgba(95, 68, 49, .08);
+    }
+    .reader-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .reader-actions button {
+      min-height: 52px;
+      border-radius: 22px;
+      font-weight: 900;
+      background: rgba(255, 252, 247, .84);
+    }
+    .reader-actions button:first-child {
+      color: #fff;
+      background: var(--brown);
+      box-shadow: 0 10px 24px rgba(111, 81, 72, .18);
+    }
+    .companion-panel {
+      width: 100%;
+      max-width: 760px;
+      min-height: 92px;
+      max-height: 132px;
+      margin: 0 auto;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      border-radius: 20px;
+      padding: 12px 14px;
+      background: rgba(255, 250, 242, .76);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .companion-title {
+      margin-bottom: 6px;
+      color: rgba(74, 57, 45, .72);
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .companion-body {
+      padding: 0;
+      color: rgba(55, 45, 36, .82);
+      font-size: 14px;
+      line-height: 1.65;
+      font-weight: 700;
+    }
+    .companion-empty { color: rgba(95, 80, 70, .58); }
+    .companion-error { color: #9b4a3f; }
+    .companion-text p { margin: 0 0 .65em; }
+    .companion-text p:last-child { margin-bottom: 0; }
+    .toast { bottom: calc(236px + env(safe-area-inset-bottom)); }
+    @media (min-width: 760px) {
+      .reader-companion-dock { left: 50%; transform: translateX(-50%); width: min(820px, 100%); border-radius: 24px 24px 0 0; }
+    }
+    @media (max-width: 768px) {
+      .reader-scroll { padding-bottom: calc(318px + env(safe-area-inset-bottom)); }
+      .reader-companion-dock {
+        padding-left: max(18px, env(safe-area-inset-left));
+        padding-right: max(18px, env(safe-area-inset-right));
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      }
+    }
+`;
+          if (!html.includes('.reader-companion-dock')) {
+            html = html.replace('</style>', css + '\n  </style>');
+          }
+
+          const dock = [
+            '          </section>',
+            '          <nav class="reader-companion-dock" aria-label="${COMPANION_NAME}陪读面板">',
+            '            <div class="reader-actions">',
+            '              <button data-look>让${COMPANION_NAME}陪我看看这里</button>',
+            '              <button data-today>今天看到这里</button>',
+            '            </div>',
+            '            <section class="companion-panel" aria-live="polite">',
+            '              <div class="companion-title">${COMPANION_NAME}陪读</div>',
+            '              <div class="companion-body companion-empty" id="companionBody">${COMPANION_NAME}还没留下短评。</div>',
+            '            </section>',
+            '          </nav>'
+          ].join('\n');
+          const dockPattern = /            <details class="companion" id="companionDock">[\s\S]*?          <nav class="bottom-actions">[\s\S]*?          <\/nav>/;
+          if (!dockPattern.test(html) && !html.includes('reader-companion-dock')) {
+            throw new Error('Could not find old bottom actions block.');
+          }
+          html = html.replace(dockPattern, dock);
+
+          const look = [
+            '    async function lookHere(button) {',
+            '      const body = $("#companionBody");',
+            '      button.disabled = true;',
+            '      button.textContent = COMPANION_NAME + "正在看这里…";',
+            '      if (body) {',
+            '        body.className = "companion-body";',
+            '        body.textContent = COMPANION_NAME + "正在陪你看这里……";',
+            '      }',
+            '      try {',
+            '        const reply = await askCompanion();',
+            '        if (body) {',
+            '          body.className = "companion-body companion-text";',
+            '          body.innerHTML = "<p>" + escapeHtml(reply).replace(/\\n+/g, "</p><p>") + "</p>";',
+            '        }',
+            '      } catch (error) {',
+            '        const message = COMPANION_NAME + "暂时没连上，请检查 API 配置。";',
+            '        console.error("Companion failed", error);',
+            '        if (body) {',
+            '          body.className = "companion-body companion-error";',
+            '          body.textContent = localStorage.getItem(AI_ENDPOINT_KEY) ? message : message + " 现在还没有填写接口地址。";',
+            '        }',
+            '      } finally {',
+            '        button.disabled = false;',
+            '        button.textContent = "让" + COMPANION_NAME + "陪我看看这里";',
+            '      }',
+            '    }',
+            '',
+            '    async function askCompanion() {'
+          ].join('\n');
+          const lookPattern = /    async function lookHere\(button\) \{[\s\S]*?\n    async function askCompanion\(\) \{/;
+          if (!lookPattern.test(html)) throw new Error('Could not find lookHere function.');
+          html = html.replace(lookPattern, look);
+
+          fs.writeFileSync(path, html);
+          fs.rmSync('.github/workflows/patch-companion-dock.yml', { force: true });
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/patch-companion-dock.yml
+          git commit -m "Add reader companion dock" || exit 0
+          git push
