@@ -18,16 +18,38 @@
       --green: #dce9dc;
       --line: rgba(111, 81, 72, 0.16);
       --shadow: 0 18px 46px rgba(88, 62, 48, 0.12);
+      --reader-bg: #fcf6ee;
+      --reader-bg-top: #f7eee4;
+      --reader-bg-bottom: #fcf6ee;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
     }
     * { box-sizing: border-box; }
-    html, body, #app { width: 100%; min-height: 100%; margin: 0; }
+    html, body, #app {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      background: var(--reader-bg);
+      overflow-x: hidden;
+    }
+    html {
+      min-height: 100%;
+      min-height: 100svh;
+      min-height: 100dvh;
+    }
     body {
+      min-height: 100vh;
+      min-height: 100svh;
+      min-height: 100dvh;
       background:
         radial-gradient(circle at 20% 8%, rgba(255,255,255,.72), transparent 28rem),
         linear-gradient(180deg, var(--paper), #fffaf4);
       color: var(--ink);
       overflow-x: hidden;
+    }
+    #app {
+      min-height: 100vh;
+      min-height: 100svh;
+      min-height: 100dvh;
     }
     button, input, textarea { font: inherit; }
     button {
@@ -85,7 +107,11 @@
     .book-actions { display: flex; gap: 10px; }
     .primary { background: var(--brown); color: #fff; box-shadow: none; font-weight: 900; }
     .danger { color: #9b3b32; }
-    .import-view, .reader-view { min-height: 100vh; }
+    .import-view, .reader-view {
+      min-height: 100vh;
+      min-height: 100svh;
+      min-height: 100dvh;
+    }
     .topbar {
       position: sticky; top: 0; z-index: 4; display: grid; grid-template-columns: 48px 1fr 48px; gap: 10px;
       align-items: center; padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
@@ -111,9 +137,24 @@
     .settings-card h2 { margin: 0; font-size: 26px; }
     .settings-card label { display: grid; gap: 8px; color: var(--muted); font-weight: 800; }
     .settings-card ol { margin: 0; padding-left: 22px; color: var(--muted); line-height: 1.7; font-weight: 700; }
-    .reader-view { background: linear-gradient(180deg, #f7eee4, #fcf6ee); }
+    .reader-view {
+      position: relative;
+      background: linear-gradient(180deg, var(--reader-bg-top), var(--reader-bg-bottom));
+      overflow-x: clip;
+    }
+    .reader-view::before {
+      content: "";
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: calc(180px + env(safe-area-inset-bottom));
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(252,246,238,0), var(--reader-bg-bottom) 34%, var(--reader-bg-bottom));
+      z-index: 4;
+    }
     .reader-scroll {
-      width: 100%; max-width: 760px; margin: 0 auto; padding: 22px 22px 160px;
+      width: 100%; max-width: 760px; margin: 0 auto; padding: 22px 22px calc(210px + env(safe-area-inset-bottom));
       overflow-x: hidden;
     }
     .novel-paper {
@@ -135,8 +176,11 @@
     .page-buttons span { color: var(--muted); font-weight: 800; }
     .bottom-actions {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: grid; gap: 10px;
-      grid-template-columns: 1fr 1fr; padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
-      background: rgba(251, 245, 237, .92); backdrop-filter: blur(18px); border-top: 1px solid var(--line);
+      grid-template-columns: 1fr 1fr;
+      padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(252,246,238,.78), var(--reader-bg-bottom) 34%, var(--reader-bg-bottom));
+      backdrop-filter: blur(18px);
+      border-top: 1px solid var(--line);
     }
     .bottom-actions .wide { grid-column: 1 / -1; }
     .companion {
@@ -158,10 +202,21 @@
     }
     @media (max-width: 768px) {
       .app-shell { padding: 34px 20px 92px; }
-      .reader-scroll { max-width: 100%; padding-left: 20px; padding-right: 20px; box-sizing: border-box; }
+      .reader-scroll {
+        max-width: 100%;
+        padding-left: 20px;
+        padding-right: 20px;
+        padding-bottom: calc(230px + env(safe-area-inset-bottom));
+        box-sizing: border-box;
+      }
       .novel-paper, .progress-panel, .page-buttons { max-width: 100%; }
       .choice { grid-template-columns: 58px 1fr 20px; padding: 22px 18px; }
       .choice strong { font-size: 25px; }
+      .bottom-actions {
+        padding-left: max(18px, env(safe-area-inset-left));
+        padding-right: max(18px, env(safe-area-inset-right));
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      }
       body { width: 100%; max-width: 100%; overflow-x: hidden; }
     }
   </style>
@@ -261,7 +316,7 @@
         bufferLength += clean.length;
       }
       flush();
-      return segments.length ? segments : ["这本书暂时没有读到正文。"];
+      return segments.length ? segments : ["这本书暂时没有读到正文。"]; 
     }
 
     function needsRepagination(book) {
