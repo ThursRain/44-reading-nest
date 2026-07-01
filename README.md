@@ -1,26 +1,22 @@
 # 44小窝共读
 
-这是 44小窝共读 的静态网页发布包。
+这是可以直接放到 GitHub Pages 的静态网页包。
 
-## 用 GitHub Pages 长期托管
+## 上传方式
 
-1. 在 GitHub 新建一个公开仓库，例如 `44-reading-nest`。
-2. 把本文件夹里的全部文件上传到仓库根目录。
-3. 打开仓库 `Settings` -> `Pages`。
-4. `Build and deployment` 选择 `Deploy from a branch`。
-5. `Branch` 选择 `main` 和 `/root`，然后保存。
-6. 等一两分钟，GitHub 会给出一个长期网址。
+1. 打开仓库 `ThursRain/44-reading-nest`。
+2. 上传本文件夹里的 `index.html`、`.nojekyll`、`README.md`。
+3. 提交后等待 GitHub Pages 自动刷新。
 
-## 用 git 发布
+## 这版包含
 
-如果电脑已安装 Git，可以双击 `publish-with-git.bat`，按提示粘贴 GitHub 仓库 HTTPS 地址。
+- 手机可直接打开，不需要电脑开服务器。
+- TXT / Markdown 小说导入。
+- 漫画图片导入。
+- IndexedDB 本地保存书籍正文、漫画图片、书架和阅读进度。
+- 刷新、关闭浏览器后仍可继续阅读。
+- 阅读进度滑条。
+- 纸张感沉浸阅读页。
+- “陪我看看这里”有 loading 和明确错误提示，不再静默无反应。
 
-示例仓库地址格式：
-
-```text
-https://github.com/你的用户名/44-reading-nest.git
-```
-
-## 注意
-
-这个包只包含网页壳，不包含私人书籍、聊天记录或本地缓存。
+注意：书籍保存在当前浏览器本地。如果清除 Safari / 浏览器网站数据，书架也会被清空。
